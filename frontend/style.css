@@ -1,0 +1,37 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f8f8f8;
+  margin: 0;
+  padding: 0;
+}
+.register-container,
+.login-container {
+  background: #fff;
+  padding: 24px;
+  margin: 40px auto;
+  width: 320px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #ccc;
+}
+input,
+button {
+  margin: 8px 0;
+  padding: 10px;
+  width: 100%;
+}
+button {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+button:hover {
+  background: #0056b3;
+}
+@media (max-width: 500px) {
+  .register-container,
+  .login-container {
+    width: 95%;
+  }
+}
