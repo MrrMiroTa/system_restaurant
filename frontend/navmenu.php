@@ -19,11 +19,36 @@
     }
 
     .sidebar .logo {
-        color: black;
-        background:#007bff;
-        font-size: 1.5em;
+        height: 150px;
+        background: linear-gradient(90deg, #007bff 0%, #00c6ff 100%);
+        color: #fff;
+        font-size: 1.35em;
         font-weight: bold;
-        padding: 24px 20px 12px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        min-height: 110px;
+        box-shadow: 0 2px 12px #007bff22;
+    }
+
+    .sidebar .logo img {
+        width: 100%;
+        height: 80%;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto 8px auto;
+        background: #fff;
+        /* border-radius: 50%; */
+        box-shadow: 0 2px 12px #007bff33;
+        border: 3px solid #fff;
+        transition: box-shadow 0.2s;
+    }
+
+    .sidebar .logo img:hover {
+        box-shadow: 0 4px 18px #00c6ff55;
+        transform: scale(1.05);
+
     }
 
     .sidebar .menu {
@@ -78,14 +103,15 @@
     }
 </style>
 <div class="sidebar" id="sidebar">
-    <div class="logo" style="font-size: 20px;">💸Friend Meet</div>
+    <div class="logo" ><img src="./image/logo.png" alt=""></div>
     <ul class="menu">
         <li><a href="dashboard.php" onclick="closeSidebarOnMobile()">Dashboard</a></li>
-        <li><a href="menu.php" onclick="closeSidebarOnMobile()">Menu</a></li>
-        <li><a href="stock.php" onclick="closeSidebarOnMobile()">Stock</a></li>
-        <li><a href="order.php" onclick="closeSidebarOnMobile()">Orders</a></li>
-        <li><a href="admin_menu.php" onclick="closeSidebarOnMobile()">Admin Menu</a></li>
-        <li><a href="customer_menu.php" onclick="closeSidebarOnMobile()">Customer Menu</a></li>
+        <li><a href="customer_menu.php" onclick="closeSidebarOnMobile()">Orders</a></li>
+        <!-- <li><a href="menu.php" onclick="closeSidebarOnMobile()">Menu</a></li> -->
+         <li><a href="order.php" onclick="closeSidebarOnMobile()">Recipe</a></li>
+         <li><a href="report.php" onclick="closeSidebarOnMobile()">Report</a></li>
+        <li><a href="stock.php" onclick="closeSidebarOnMobile()">Manage Stock</a></li>
+        <li><a href="admin_menu.php" onclick="closeSidebarOnMobile()">Manage Menu</a></li>
         <li><a href="user_management.php" onclick="closeSidebarOnMobile()">User Management</a></li>
         <li><a href="logout.php" onclick="closeSidebarOnMobile()">Logout</a></li>
     </ul>

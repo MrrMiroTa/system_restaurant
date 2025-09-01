@@ -175,6 +175,30 @@
         <?php if (isset($_GET['login']) && $_GET['login'] === 'success'): ?>
             <div class="success-message">Login successful!</div>
         <?php endif; ?>
+
+        <div class="form signin">
+            <h2>Sign In</h2>
+            <form action="../backend/login.php" method="POST">
+                <div class="inputBox">
+                    <input type="email" name="username" required="required" />
+                    <i class="fa-regular fa-user"></i>
+                    <span>Email</span>
+                </div>
+                <div class="inputBox">
+                    <input type="password" name="password" required="required" />
+                    <i class="fa-solid fa-lock"></i>
+                    <span>password</span>
+                </div>
+                <div class="inputBox" style="display:flex;align-items:center;gap:8px;">
+                    <input type="checkbox" name="remember_me" id="remember_me" style="width:auto;">
+                    <label for="remember_me" style="color:#fff;font-size:0.95em;">Remember Me</label>
+                </div>
+                <div class="inputBox">
+                    <input type="submit" value="Login" />
+                </div>
+            </form>
+            <p>Not Registered ? <a href="#" class="create">Create an account</a></p>
+        </div>
         <div class="form signup">
             <h2>Sign Up</h2>
             <form action="../backend/register.php" method="POST">
@@ -199,29 +223,7 @@
             </form>
             <p>Already a member ? <a href="#" class="login">Log in</a></p>
         </div>
-        <div class="form signin">
-            <h2>Sign In</h2>
-            <form action="../backend/login.php" method="POST">
-                <div class="inputBox">
-                    <input type="email" name="username" required="required" />
-                    <i class="fa-regular fa-user"></i>
-                    <span>Email</span>
-                </div>
-                <div class="inputBox">
-                    <input type="password" name="password" required="required" />
-                    <i class="fa-solid fa-lock"></i>
-                    <span>password</span>
-                </div>
-                <div class="inputBox" style="display:flex;align-items:center;gap:8px;">
-                    <input type="checkbox" name="remember_me" id="remember_me" style="width:auto;">
-                    <label for="remember_me" style="color:#fff;font-size:0.95em;">Remember Me</label>
-                </div>
-                <div class="inputBox">
-                    <input type="submit" value="Login" />
-                </div>
-            </form>
-            <p>Not Registered ? <a href="#" class="create">Create an account</a></p>
-        </div>
+        
     </div>
     <script>
         let login = document.querySelector(".login");

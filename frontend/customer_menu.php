@@ -146,12 +146,29 @@ if (!isset($_SESSION['user_id'])) {
             margin-bottom: 24px;
         }
 
+        /* Ensure all menu and cart images are equal size */
         .customer-menu-item img {
-            max-width: 120px;
-            max-height: 120px;
+            width: 100px;
+            height: 100px;
             object-fit: cover;
             border-radius: 6px;
+            border: 1px solidrgb(96, 78, 78);
             margin-bottom: 10px;
+            background: #f8f8f8;
+        }
+
+        .customer-menu-item img:hover {
+            transform: scale(1.05);
+            transition: transform 0.2s;
+        }
+
+        .cart-item-img {
+            width: 54px;
+            height: 54px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #b91e1e;
+            background: #f8f8f8;
         }
 
         .customer-menu-item button {
@@ -441,29 +458,49 @@ if (!isset($_SESSION['user_id'])) {
             if (document.getElementById('discount-row')) document.getElementById('discount-row').style.display = 'none'; // Hide global discount
             cartItems.innerHTML = cart.map((item, idx) => {
                 if (typeof item.discount !== 'number') item.discount = 0;
+                if (typeof item.changedPrice !== 'number') item.changedPrice = item.price;
+                // Calculate percent difference
+                let percentDiff = 0;
+                if (item.changedPrice > item.price) {
+                    percentDiff = -((item.changedPrice - item.price) / item.price * 100);
+                } else if (item.changedPrice < item.price) {
+                    percentDiff = ((item.price - item.changedPrice) / item.price * 100);
+                }
+                let percentLabel = '';
+                if (percentDiff !== 0) {
+                    percentLabel = `<span style='color:${percentDiff > 0 ? "#4caf50" : "#f44336"};font-size:0.95em;'>${percentDiff > 0 ? '+' : ''}${percentDiff.toFixed(1)}%</span>`;
+                }
                 return `
-                    <div style="display:flex;align-items:center;gap:12px;background:#f6f6f6;border-radius:8px;padding:12px 10px;margin-bottom:14px;box-shadow:0 1px 4px #eee;">
-                        <img src="${item.picture || ''}" alt="${item.name}" style="width:54px;height:54px;border-radius:6px;object-fit:cover;border:1px solid #e0e0e0;">
-                        <div style="flex:1;min-width:0;">
-                            <div style="font-weight:600;font-size:1.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</div>
-                            <div style="color:#888;font-size:0.98em;">${item.category}</div>
-                            <div style="margin-top:4px;font-size:0.97em;">
-                                <label>Discount: <input type="number" min="0" max="100" value="${item.discount}" data-cart-idx="${idx}" class="item-discount-input" style="width:48px;"> %</label>
+                    <div style="display:flex;align-items:flex-start;gap:16px;background:#fff;border-radius:12px;padding:18px 14px;margin-bottom:18px;box-shadow:0 2px 8px #e0e0e0;">
+                        <img src="${item.picture || ''}" alt="${item.name}" class="cart-item-img" style="border:1.5px solid #e0e0e0;box-shadow:0 1px 4px #eee;">
+                        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;">
+                            <div style="font-weight:600;font-size:1.13em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;">${item.name}</div>
+                            <div style="color:#888;font-size:0.99em;">${item.category}</div>
+                            <div style="display:flex;flex-direction:row;gap:16px;align-items:center;">
+                                <label style="font-size:0.97em;">Discount:<br>
+                                    <input type="number" min="0" max="100" value="${item.discount}" data-cart-idx="${idx}" class="item-discount-input" style="width:54px;padding:4px 8px;border-radius:6px;border:1px solid #ccc;font-size:1em;"> 
+                                </label>
+                                <label style="font-size:0.97em;">Price:<br>
+                                    <input type="number" min="0" step="0.01" value="${item.changedPrice}" data-cart-idx="${idx}" class="item-price-input" style="width:74px;padding:4px 8px;border-radius:6px;border:1px solid #ccc;font-size:1em;"> ${percentLabel}
+                                </label>
                             </div>
+                            <span style="color:#aaa;font-size:0.95em;">(Old: $${item.price})</span>
                         </div>
-                        <div style="display:flex;align-items:center;gap:4px;">
-                            <button onclick="updateCartQty(${item.id},-1)" style="width:28px;height:28px;background:#eee;border:none;border-radius:4px;font-size:1.1em;font-weight:bold;color:#007bff;cursor:pointer;">-</button>
-                            <span style="min-width:22px;text-align:center;font-weight:500;">${item.qty}</span>
-                            <button onclick="updateCartQty(${item.id},1)" style="width:28px;height:28px;background:#eee;border:none;border-radius:4px;font-size:1.1em;font-weight:bold;color:#007bff;cursor:pointer;">+</button>
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;justify-content:center;">
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <button onclick="updateCartQty(${item.id},-1)" style="width:30px;height:30px;background:#f5f5f5;border:none;border-radius:6px;font-size:1.15em;font-weight:bold;color:#007bff;cursor:pointer;">-</button>
+                                <span style="min-width:26px;text-align:center;font-weight:500;font-size:1.08em;">${item.qty}</span>
+                                <button onclick="updateCartQty(${item.id},1)" style="width:30px;height:30px;background:#f5f5f5;border:none;border-radius:6px;font-size:1.15em;font-weight:bold;color:#007bff;cursor:pointer;">+</button>
+                            </div>
+                            <div style="font-weight:600;color:#222;min-width:70px;text-align:right;font-size:1.12em;">$${((item.changedPrice * (1 - item.discount/100)) * item.qty).toFixed(2)}</div>
                         </div>
-                        <div style="font-weight:600;color:#222;min-width:60px;text-align:right;">$${((item.price * (1 - item.discount/100)) * item.qty).toFixed(2)}</div>
                     </div>
                 `;
             }).join('');
 
             // Bind per-item discount input events
             document.querySelectorAll('.item-discount-input').forEach(input => {
-                input.addEventListener('input', function() {
+                input.addEventListener('change', function() {
                     let idx = parseInt(this.getAttribute('data-cart-idx'));
                     let val = parseFloat(this.value);
                     if (isNaN(val) || val < 0) val = 0;
@@ -474,12 +511,24 @@ if (!isset($_SESSION['user_id'])) {
                     updateCartBadge();
                 });
             });
+            // Bind per-item price input events
+            document.querySelectorAll('.item-price-input').forEach(input => {
+                input.addEventListener('change', function() {
+                    let idx = parseInt(this.getAttribute('data-cart-idx'));
+                    let val = parseFloat(this.value);
+                    if (isNaN(val) || val < 0) val = cart[idx].price;
+                    cart[idx].changedPrice = val;
+                    saveCart();
+                    renderCart();
+                    updateCartBadge();
+                });
+            });
             // Calculate totals
             let subtotal = 0,
                 totalDiscount = 0,
                 total = 0;
             cart.forEach(item => {
-                const itemSubtotal = item.price * item.qty;
+                const itemSubtotal = (item.changedPrice || item.price) * item.qty;
                 const itemDiscount = itemSubtotal * (item.discount / 100);
                 subtotal += itemSubtotal;
                 totalDiscount += itemDiscount;
@@ -493,7 +542,7 @@ if (!isset($_SESSION['user_id'])) {
                     <textarea id="customer-note" rows="2" style="width:100%;margin-top:4px;resize:vertical;">${noteValue}</textarea>
                 </div>
                 <div style="margin-bottom:8px;color:#007bff;font-size:1.02em;font-weight:500;">សម្គាល់: សូមពិនិត្យមើលចំនួន និងបញ្ចុះតម្លៃមុនបញ្ជាទិញ។<br>Note: Please review your items and discounts before checkout.</div>
-                <span style="font-size:1.1em;">Total:</span> <span style="font-weight:bold;font-size:1.15em;color:#28a745;">$${total.toFixed(2)}</span>${totalDiscount > 0 ? ` <span style="color:#888;font-size:0.98em;">(Discount: -$${totalDiscount.toFixed(2)})</span>` : ''}
+                <span style="font-size:1.1em;">Total:</span> <span style="font-weight:bold;font-size:1.15em;color:#28a745;">$${total.toFixed(2)} <span style='color:#ff9800;'>(${(total*4000).toLocaleString('en-US')} ៛)</span></span>${totalDiscount > 0 ? ` <span style="color:#888;font-size:0.98em;">(Discount: -$${totalDiscount.toFixed(2)} / -${(totalDiscount*4000).toLocaleString('en-US')} ៛)</span>` : ''}
             `;
             // Save note to localStorage on change
             const noteInput = document.getElementById('customer-note');
@@ -512,8 +561,8 @@ if (!isset($_SESSION['user_id'])) {
             }
             menuList.innerHTML = items.map(item => `
                 <div class="customer-menu-item">
-                    <img src="${item.picture || ''}" alt="${item.name}">
-                    <div><b>${item.name}</b></div>
+                    <img src="${item.picture || ''}" alt="${item.name}" class="customer-menu-item">
+                    <div style="font-weight:600;font-size:1.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;"><b>${item.name}</b></div>
                     <div>${item.category}</div>
                     <div>${item.description}</div>
                     <div>Price: $${parseFloat(item.price).toFixed(2)}</div>
@@ -576,11 +625,11 @@ if (!isset($_SESSION['user_id'])) {
                 alert('Cannot place order: One or more items are out of stock! Please inform admin.');
                 return;
             }
-            // Prepare items with per-item discount
+            // Prepare items with per-item discount and changed price
             const items = cart.map(i => ({
                 menu_id: i.id,
                 qty: i.qty,
-                price: i.price,
+                price: typeof i.changedPrice === 'number' ? i.changedPrice : i.price,
                 discount: typeof i.discount === 'number' ? i.discount : 0
             }));
             let subtotal = 0,
@@ -645,34 +694,87 @@ if (!isset($_SESSION['user_id'])) {
             try {
                 receiptModalOpen = false;
                 const now = new Date();
-                // Get admin name from PHP session (injected into JS)
                 let adminName = typeof ADMIN_NAME !== 'undefined' ? ADMIN_NAME : '';
-                let html = `<h2 style='text-align:center;position:relative;'>Receipt` +
-                    `<span onclick='closeReceiptAndBack()' title='Close Receipt' style='position:absolute;top:0;right:0;font-size:1.3em;color:#dc3545;cursor:pointer;padding:0 8px;'>&#10006;</span></h2>`;
-                html += `<div><b>Order ID:</b> ${orderId}</div>`;
-                html += `<div><b>Date/Time:</b> ${now.toLocaleString()}</div>`;
-                if (adminName) html += `<div><b>Admin:</b> ${adminName}</div>`;
-                if (note && note.trim()) html += `<div style='margin:8px 0;'><b>Note:</b> ${note.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
-                html += `<hr>`;
-                html += `<div><b>Items:</b></div>`;
-                html += `<ul style='padding-left:18px;'>`;
-                items.forEach(i => {
-                    const menu = allMenuItems.find(m => m.id == i.menu_id);
+
+                // Calculate total item discount
+                const totalItemDiscount = items.reduce((sum, i) => {
                     const itemSubtotal = i.price * i.qty;
                     const itemDiscount = itemSubtotal * (i.discount / 100);
-                    html += `<li>${menu ? menu.name : 'Item'} x ${i.qty} - $${(itemSubtotal - itemDiscount).toFixed(2)}`;
-                    if (i.discount > 0) html += ` <span style='color:#888;font-size:0.97em;'>(-${i.discount}%: -$${itemDiscount.toFixed(2)})</span>`;
-                    html += `</li>`;
+                    return sum + itemDiscount;
+                }, 0);
+
+                // Calculate discount percent
+                const discountPercent = subtotal > 0 ? (totalItemDiscount / subtotal) * 100 : 0;
+
+                let html = `<div style='position:relative;max-height:90vh; display:flex; flex-direction:column; overflow-y:auto; padding-right:8px; scrollbar-width:none; -ms-overflow-style:none; overscroll-behavior:none;'>
+                <span onclick='closeReceiptAndBack()' title='Close Receipt' style='position:absolute;top:0;right:0;font-size:1.3em;color:#dc3545;cursor:pointer;padding:0 8px;font-weight:bold;'>&#10006;</span>
+                <div style='overflow-y:auto; flex-grow:1; padding-right:8px; scrollbar-width:none; -ms-overflow-style:none; overscroll-behavior:none;'>`;
+
+                html += `<h2 style='text-align:center;'>Receipt</h2>`;
+                html += `<table style='width:100%;border-collapse:collapse;margin-bottom:10px;'>`;
+                html += `<tr><td><b>Order ID:</b></td><td>${orderId}</td></tr>`;
+                html += `<tr><td><b>Date/Time:</b></td><td>${now.toLocaleString()}</td></tr>`;
+                if (adminName) html += `<tr><td><b>Order by:</b></td><td>${adminName}</td></tr>`;
+                if (note && note.trim()) html += `<tr><td><b>Note:</b></td><td>${note.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td></tr>`;
+                html += `</table>`;
+
+                html += `<div style='margin-bottom:6px;'><b>Items:</b></div>`;
+                html += `<table style='width:100%;border-collapse:collapse;font-size:0.98em;margin-bottom:10px;'>`;
+                html += `<thead><tr style='background:#f5f5f5;'><th style='padding:4px 6px;'>Name</th><th style='padding:4px 6px;'>Qty</th><th style='padding:4px 6px;'>Price</th><th style='padding:4px 6px;'>Discount</th><th style='padding:4px 6px;'>Total</th></tr></thead><tbody>`;
+
+                items.forEach(i => {
+                    const menu = allMenuItems.find(m => m.id == i.menu_id);
+                    let originalPrice = i.price;
+                    if (menu && !isNaN(parseFloat(menu.price))) {
+                        originalPrice = parseFloat(menu.price);
+                    }
+                    const itemSubtotal = i.price * i.qty;
+                    const itemDiscount = itemSubtotal * (i.discount / 100);
+                    // Calculate price change percent robustly
+                    let priceChangePercent = 0;
+                    if (!isNaN(originalPrice) && !isNaN(i.price)) {
+                        if (i.price > originalPrice) {
+                            priceChangePercent = -((i.price - originalPrice) / originalPrice * 100);
+                        } else if (i.price < originalPrice) {
+                            priceChangePercent = ((originalPrice - i.price) / originalPrice * 100);
+                        }
+                    }
+                    let priceChangeLabel = '';
+                    if (priceChangePercent !== 0) {
+                        priceChangeLabel = `<span style='color:${priceChangePercent > 0 ? "#4caf50" : "#f44336"};font-size:0.97em;'>${priceChangePercent > 0 ? '+' : ''}${priceChangePercent.toFixed(1)}%</span>`;
+                    }
+                    html += `<tr>`;
+                    html += `<td style='padding:4px 6px;font-family:Khmer OS Siemreap,Arial,sans-serif;'>${menu ? menu.name : 'Item'}</td>`;
+                    html += `<td style='padding:4px 6px;text-align:center;'>${i.qty}</td>`;
+                    html += `<td style='padding:4px 6px;text-align:right;'>$${parseFloat(i.price).toFixed(2)}<br>`;
+                    // html += `<span style='color:#888;font-size:0.95em;'>(Old: $${originalPrice})</span></td>`;
+                    html += `<td style='padding:4px 6px;text-align:left;'>`;
+                    html += `${priceChangeLabel !== '' ? priceChangeLabel : '0%'}`;
+                    html += `</td>`;
+                    html += `<td style='padding:4px 6px;text-align:right;'>$${(itemSubtotal - itemDiscount).toFixed(2)}</td>`;
+                    html += `</tr>`;
                 });
-                html += `</ul>`;
-                html += `<div style='margin:8px 0;'><b>Subtotal:</b> $${subtotal.toFixed(2)}</div>`;
-                if (discount > 0) html += `<div style='margin:8px 0;'><b>Discount:</b> -$${discount.toFixed(2)}</div>`;
-                html += `<div style='margin:8px 0;'><b>Total:</b> $${total.toFixed(2)}</div>`;
+
+                html += `</tbody></table>`;
+
+                html += `<table style='width:100%;border-collapse:collapse;font-size:1em;'>`;
+                html += `<tr><td><b>Subtotal:</b></td><td style='text-align:right;'>$${subtotal.toFixed(2)}</td></tr>`;
+                if (totalItemDiscount > 0) {
+                    html += `<tr><td><b>Total Discount:</b></td><td style='text-align:right;'>-$${totalItemDiscount.toFixed(2)} (${discountPercent.toFixed(2)}%) <span style='color:#ff9800;font-size:0.97em;'>(-${(totalItemDiscount*4000).toLocaleString('en-US')} ៛)</span></td></tr>`;
+                }
+                html += `<tr><td><b>Total:</b></td><td style='text-align:right;font-weight:bold;color:#28a745;'>$${total.toFixed(2)}<br><span style='color:#ff9800;font-size:1em;'>(${(total*4000).toLocaleString('en-US')} ៛)</span></td></tr>`;
+                html += `</table>`;
+
                 html += `<div id='qrcode' style='text-align:center;margin:16px 0;'></div>`;
-                html += `<div style='text-align:center;margin:12px 0;color:#28a745;font-weight:bold;'>Thank you for your order!</div>`;
-                html += `<div style='margin:10px 0;'><b>Feedback:</b><br><textarea style='width:100%;height:60px;'></textarea></div>`;
-                html += `<button onclick='window.print()' style='background:#007bff;color:#fff;padding:8px 18px;border:none;border-radius:4px;margin-right:8px;'>Print</button>`;
-                html += `<button onclick='closeReceipt()' style='background:#ccc;padding:8px 18px;border:none;border-radius:4px;'>Close</button>`;
+                html += `<div style='text-align:center;margin:12px 0;color:#28a745;font-weight:bold;font-family:Khmer OS Siemreap,Arial,sans-serif;'>សូមអរគុណសម្រាប់ការបញ្ជាទិញ!<br>Thank you for your order!</div>`;
+                html += `<div style='margin:10px 0;'><b>Feedback:</b><br><textarea style='width:100%;height:60px;font-family:Khmer OS Siemreap,Arial,sans-serif;'></textarea></div>`;
+                html += `<div style='text-align:center; margin-bottom:10px;'>`;
+                html += `<button onclick='window.print()' style='background:#007bff;color:#fff;padding:8px 18px;border:none;border-radius:4px;margin-right:8px;font-family:Khmer OS Siemreap,Arial,sans-serif;'>Print</button>`;
+                html += `<button onclick='closeReceipt()' style='background:#ccc;padding:8px 18px;border:none;border-radius:4px;font-family:Khmer OS Siemreap,Arial,sans-serif;'>Close</button>`;
+                html += `</div>`;
+
+                html += `</div></div>`; // Close scrollable content and wrapper
+
                 const receiptContent = document.getElementById('receipt-content');
                 if (receiptContent) receiptContent.innerHTML = html;
                 const modal = document.getElementById('receipt-modal');
@@ -683,6 +785,8 @@ if (!isset($_SESSION['user_id'])) {
                 console.error('Receipt modal error:', err);
             }
         }
+
+
 
         // New function for X button: just close and reload, do not delete order
         function closeReceiptAndBack() {
@@ -779,7 +883,7 @@ if (!isset($_SESSION['user_id'])) {
         function generateQRCode(orderId) {
             // Show only your image in the QR code area
             const qrDiv = document.getElementById('qrcode');
-            qrDiv.innerHTML = `<img src="./image/image.png" alt="Logo" style="width:140px;height:130px;display:inline-block;">`;
+            qrDiv.innerHTML = `<img src="./image/image.png" alt="Logo" style="width:140px;height:140px;display:inline-block;">`;
         }
 
         // Remove or comment out the old deleteOrderAndBack function if not used elsewhere.

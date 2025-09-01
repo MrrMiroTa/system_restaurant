@@ -59,39 +59,59 @@ function fetchDashboardData() {
   fetch("../backend/dashboard_data.php")
     .then((res) => res.json())
     .then((data) => {
-      document.getElementById("sales-today").textContent = `${
-        data.qty_today
-      } / $${parseFloat(data.sales_today).toFixed(2)}`;
-      document.getElementById("sales-month").textContent = `${
-        data.qty_month
-      } / $${parseFloat(data.sales_month).toFixed(2)}`;
-      // Top menu
+      // Defensive: check if elements exist before setting innerHTML/textContent
+      const salesTodayDiv = document.getElementById("sales-today");
+      if (salesTodayDiv) {
+        salesTodayDiv.textContent = `${data.qty_today} / $${parseFloat(
+          data.sales_today
+        ).toFixed(2)}`;
+      }
+      const salesMonthDiv = document.getElementById("sales-month");
+      if (salesMonthDiv) {
+        salesMonthDiv.textContent = `${data.qty_month} / $${parseFloat(
+          data.sales_month
+        ).toFixed(2)}`;
+      }
       const topMenuList = document.getElementById("top-menu-list");
-      topMenuList.innerHTML = data.top_menu
-        .map((item) => `<div>${item.name} (${item.total_qty})</div>`)
-        .join("");
-      // Low stock alert
+      if (topMenuList && data.top_menu) {
+        topMenuList.innerHTML = data.top_menu
+          .map((item) => `<div>${item.name} (${item.total_qty})</div>`)
+          .join("");
+      }
       const alertBox = document.getElementById("stock-alert");
-      if (data.low_stock && data.low_stock.length > 0) {
-        alertBox.style.display = "block";
-        alertBox.textContent =
-          "Low stock: " +
-          data.low_stock.map((s) => `${s.name} (qty: ${s.qty})`).join(", ");
-      } else {
-        alertBox.style.display = "none";
+      if (alertBox) {
+        if (data.low_stock && data.low_stock.length > 0) {
+          alertBox.style.display = "block";
+          alertBox.textContent =
+            "Low stock: " +
+            data.low_stock.map((s) => `${s.name} (qty: ${s.qty})`).join(", ");
+        } else {
+          alertBox.style.display = "none";
+        }
       }
       // Most ordered today
       const mostOrderedToday = document.getElementById("most-ordered-today");
+      console.log("most_ordered_today:", data.most_ordered_today);
       if (mostOrderedToday) {
-        console.log('most_ordered_today:', data.most_ordered_today);
-        if (data.most_ordered_today && data.most_ordered_today.name) {
-          mostOrderedToday.innerHTML = `${data.most_ordered_today.name} (${data.most_ordered_today.total_qty})`;
+        if (
+          Array.isArray(data.most_ordered_today) &&
+          data.most_ordered_today.length > 0
+        ) {
+          mostOrderedToday.innerHTML = data.most_ordered_today
+            .map(
+              (item, idx) =>
+                `<div>${idx + 1}. ${item.name} <span style='color:#007bff;'>(x${
+                  item.total_qty
+                })</span></div>`
+            )
+            .join("");
         } else {
           mostOrderedToday.innerHTML = "No orders today.";
         }
-      } else {
-        console.warn('Element #most-ordered-today not found in DOM');
       }
+    })
+    .catch((err) => {
+      console.error("Dashboard data fetch error:", err);
     });
 }
 

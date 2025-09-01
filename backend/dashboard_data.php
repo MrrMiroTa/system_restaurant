@@ -37,13 +37,17 @@ while ($row = $res->fetch_assoc()) {
 }
 
 // Most ordered today
-$res = $conn->query("SELECT m.name, SUM(oi.qty) as total_qty FROM order_items oi JOIN menu m ON oi.menu_id = m.id JOIN orders o ON oi.order_id = o.id WHERE DATE(o.date_created) = '$today' AND o.status='paid' GROUP BY oi.menu_id ORDER BY total_qty DESC LIMIT 1");
-$most_ordered_today = $res->fetch_assoc();
 
-// Debug: log most ordered today to error log
-if ($most_ordered_today) {
-    error_log('Most Ordered Today: ' . print_r($most_ordered_today, true));
+// Fix: also select menu.id for uniqueness, and cast total_qty as int
+// Get all ordered items today, sorted by quantity desc
+$res = $conn->query("SELECT m.id, m.name, SUM(oi.qty) as total_qty FROM order_items oi JOIN menu m ON oi.menu_id = m.id JOIN orders o ON oi.order_id = o.id WHERE DATE(o.date_created) = '$today' AND o.status='paid' GROUP BY oi.menu_id, m.name, m.id ORDER BY total_qty DESC");
+
+$most_ordered_today = [];
+while ($row = $res->fetch_assoc()) {
+    $row['total_qty'] = (int)$row['total_qty'];
+    $most_ordered_today[] = $row;
 }
+// Always return an array (empty if no orders)
 
 if (isset($_GET['action']) && $_GET['action'] === 'sales_chart') {
     $days = 7;

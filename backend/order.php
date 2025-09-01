@@ -14,6 +14,39 @@ $action = $_GET['action'] ?? '';
 $user_id = $_SESSION['user_id'];
 
 switch ($action) {
+    case 'report_by_date':
+        $date = $_GET['date'] ?? null;
+        if (!$date) {
+            echo json_encode(['error' => 'Missing date parameter']);
+            exit();
+        }
+        $orders = [];
+        $total_sales = 0;
+        $item_sales = [];
+        $order_count = 0;
+        $stmt = $conn->prepare("SELECT o.id, u.username, o.total_price, o.date_created FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE DATE(o.date_created) = ? AND o.status = 'paid'");
+        $stmt->bind_param('s', $date);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        while ($row = $result->fetch_assoc()) {
+            $orders[] = $row;
+            $total_sales += floatval($row['total_price']);
+            $order_count++;
+        }
+        $stmt2 = $conn->prepare("SELECT m.name, SUM(oi.qty) as total_qty, SUM(oi.qty * oi.price) as total_price FROM order_items oi JOIN menu m ON oi.menu_id = m.id JOIN orders o ON oi.order_id = o.id WHERE DATE(o.date_created) = ? AND o.status = 'paid' GROUP BY oi.menu_id, m.name ORDER BY total_qty DESC");
+        $stmt2->bind_param('s', $date);
+        $stmt2->execute();
+        $result2 = $stmt2->get_result();
+        while ($row2 = $result2->fetch_assoc()) {
+            $item_sales[] = $row2;
+        }
+        echo json_encode([
+            'orders' => $orders,
+            'total_sales' => $total_sales,
+            'items' => $item_sales,
+            'order_count' => $order_count
+        ]);
+        exit();
     case 'list':
         $result = $conn->query("SELECT o.*, u.username, u.role FROM orders o LEFT JOIN users u ON o.user_id = u.id ORDER BY o.date_created DESC");
         $data = [];
@@ -109,7 +142,25 @@ switch ($action) {
             echo json_encode(['error' => 'Invalid order id']);
         }
         break;
-    // Add print/receipt logic as needed
+    case 'report_today':
+        $today = date('Y-m-d');
+        $orders = [];
+        $total_sales = 0;
+        $sql = "SELECT o.id, u.username, o.total_price, o.date_created, o.status FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE DATE(o.date_created) = ? AND o.status='paid' ORDER BY o.date_created DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('s', $today);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        while ($row = $result->fetch_assoc()) {
+            $orders[] = $row;
+            $total_sales += floatval($row['total_price']);
+        }
+        echo json_encode([
+            'orders' => $orders,
+            'total_sales' => $total_sales
+        ]);
+        exit();
+        // Add print/receipt logic as needed
     default:
         echo json_encode(['error' => 'Invalid action']);
 }

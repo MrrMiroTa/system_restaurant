@@ -93,6 +93,45 @@ if (!isset($_SESSION['user_id'])) {
                 font-size: 0.98em;
                 padding: 12px 8px;
             }
+
+            /* Responsive receipt items table: show as flex rows/cards */
+            #receipt-content table,
+            #receipt-content thead,
+            #receipt-content tbody,
+            #receipt-content tr {
+                display: block;
+                width: 100%;
+            }
+
+            #receipt-content thead {
+                display: none;
+            }
+
+            #receipt-content tr {
+                margin-bottom: 10px;
+                background: #f9f9f9;
+                border-radius: 6px;
+                box-shadow: 0 1px 4px #eee;
+                padding: 8px 4px;
+            }
+
+            #receipt-content td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 6px 4px;
+                border: none !important;
+                font-size: 1em;
+            }
+
+            #receipt-content td:before {
+                content: attr(data-label);
+                font-weight: bold;
+                color: #007bff;
+                flex: 1 1 50%;
+                min-width: 90px;
+                margin-right: 8px;
+            }
         }
     </style>
 </head>
@@ -106,9 +145,17 @@ if (!isset($_SESSION['user_id'])) {
         <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:18px;gap:10px;">
             <button id="export-pdf-btn"
                 style="background:#007bff;color:#fff;border:none;border-radius:4px;padding:8px 18px;cursor:pointer;">Export/Print Orders</button>
-            <input id="order-search" type="text" placeholder="Search by user, status, or date..." style="flex:1;min-width:220px;max-width:320px;padding:8px 12px;border:1px solid #ccc;border-radius:4px;">
+            <select id="order-date-filter" style="padding:8px 12px;border:1px solid #ccc;border-radius:4px;min-width:140px;">
+                <option value="all">All</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="last7">Last 7 Days</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+            </select>
+            <input id="order-search" type="text" placeholder="Search date..." style="flex:1;min-width:220px;max-width:320px;padding:8px 12px;border:1px solid #ccc;border-radius:4px;">
         </div>
-        <div style="overflow-x:auto;">
+        <div style="overflow-x:auto;font-family:Khmer OS Siemreap,Arial,sans-serif;">
             <table id="order-list" class="order-table">
                 <thead>
                     <tr>
@@ -139,7 +186,7 @@ if (!isset($_SESSION['user_id'])) {
             document.getElementById('export-pdf-btn').onclick = function() {
                 exportOrdersToPDF();
             };
-            document.getElementById('order-search').addEventListener('input', filterOrders);
+            document.getElementById('order-date-filter').addEventListener('change', filterOrders);
         });
 
         let allOrders = [];
@@ -172,23 +219,56 @@ if (!isset($_SESSION['user_id'])) {
         }
 
         function renderStatusBadge(status) {
-            let color = '#6c757d';
-            if (status === 'Paid') color = '#08f811';
+            let color = 'rgb(0, 207, 38)';
+            if (status === 'Paid') color = ' #00c6ff';
             else if (status === 'Pending') color = '#ffc107';
             else if (status === 'Cancelled') color = '#dc3545';
             return `<span style="display:inline-block;padding:4px 12px;border-radius:12px;background:${color};color:#fff;font-size:0.98em;min-width:70px;text-align:center;">${status}</span>`;
         }
 
         function filterOrders() {
-            const q = document.getElementById('order-search').value.toLowerCase();
+            const q = document.getElementById('order-search').value.trim().toLowerCase();
+            const filter = document.getElementById('order-date-filter').value;
+            let datePattern = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/;
+            let dateMatch = q.match(datePattern);
+            const now = new Date();
             renderOrders(allOrders.filter(order => {
-                return (
-                    (order.username && order.username.toLowerCase().includes(q)) ||
-                    (order.role && order.role.toLowerCase().includes(q)) ||
-                    (order.status && order.status.toLowerCase().includes(q)) ||
-                    (order.date_created && order.date_created.toLowerCase().includes(q)) ||
-                    (order.id && String(order.id).includes(q))
-                );
+                // Date filter logic
+                if (filter !== 'all' && order.date_created) {
+                    const orderDate = new Date(order.date_created);
+                    if (filter === 'today') {
+                        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        if (orderDate < today || orderDate >= new Date(today.getTime() + 24 * 60 * 60 * 1000)) return false;
+                    } else if (filter === 'yesterday') {
+                        const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+                        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        if (orderDate < yesterday || orderDate >= today) return false;
+                    } else if (filter === 'last7') {
+                        const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+                        const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+                        if (orderDate < sevenDaysAgo || orderDate >= tomorrow) return false;
+                    } else if (filter === 'month') {
+                        if (orderDate.getFullYear() !== now.getFullYear() || orderDate.getMonth() !== now.getMonth()) return false;
+                    } else if (filter === 'year') {
+                        if (orderDate.getFullYear() !== now.getFullYear()) return false;
+                    }
+                }
+                // Search box logic
+                if (!q) return true;
+                if (order.id && String(order.id).toLowerCase().includes(q)) return true;
+                if (order.username && order.username.toLowerCase().includes(q)) return true;
+                if (order.role && order.role.toLowerCase().includes(q)) return true;
+                if (order.status && order.status.toLowerCase().includes(q)) return true;
+                if (order.date_created && order.date_created.toLowerCase().includes(q)) return true;
+                if (dateMatch && order.date_created) {
+                    let d = dateMatch;
+                    let year = d[3].length === 2 ? ('20' + d[3]) : d[3];
+                    let month = d[2].padStart(2, '0');
+                    let day = d[1].padStart(2, '0');
+                    let ymd = `${year}-${month}-${day}`;
+                    if (order.date_created.substr(0, 10) === ymd) return true;
+                }
+                return false;
             }));
         }
 
@@ -248,21 +328,25 @@ if (!isset($_SESSION['user_id'])) {
                 console.error('Order receipt error:', order);
                 return;
             }
-            let html = `<div style='position:relative;'>`;
-            // X icon: just close and refresh, do not delete order
+
+            let html = `<div style='position:relative;max-height:90vh; display:flex; flex-direction:column; overflow-y:auto; padding-right:8px; scrollbar-width: none; '>`;
             html += `<span id='close-receipt-x' title='Close Receipt' style='position:absolute;top:0;right:0;font-size:1.6em;color:#dc3545;cursor:pointer;font-weight:bold;z-index:10;'>&times;</span>`;
             html += `<h2 style='text-align:center;'>Receipt</h2>`;
-            html += `<div><b>Order ID:</b> ${order.id}</div>`;
-            html += `<div><b>Date/Time:</b> ${order.date_created}</div>`;
-            // Show admin name if available
-            if (order.username) html += `<div><b>Admin:</b> ${order.username}</div>`;
-            if (order.note && order.note.trim()) html += `<div style='margin:8px 0;'><b>Note:</b> ${order.note.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
-            html += `<hr>`;
-            html += `<div><b>Items:</b></div>`;
-            html += `<ul style='padding-left:18px;'>`;
+            html += `<table style='width:100%;border-collapse:collapse;margin-bottom:10px;'>`;
+            html += `<tr><td><b>Order ID:</b></td><td>${order.id}</td></tr>`;
+            html += `<tr><td><b>Date/Time:</b></td><td>${order.date_created}</td></tr>`;
+            if (order.username) html += `<tr><td><b>Order By:</b></td><td>${order.username}</td></tr>`;
+            if (order.note && order.note.trim()) html += `<tr><td><b>Note:</b></td><td>${order.note.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td></tr>`;
+            html += `</table>`;
+
+            html += `<div style='margin-bottom:6px;'><b>Items:</b></div>`;
+            html += `<table style='width:100%;border-collapse:collapse;font-size:0.98em;margin-bottom:10px;'>`;
+            html += `<thead><tr style='background:#f5f5f5;'><th style='padding:4px 6px;'>Name</th><th style='padding:4px 6px;'>Qty</th><th style='padding:4px 6px;'>Price</th><th style='padding:4px 6px;'>Discount</th><th style='padding:4px 6px;'>Total</th></tr></thead><tbody>`;
+
             let subtotal = 0,
                 totalDiscount = 0,
                 total = 0;
+
             if (order.items && Array.isArray(order.items)) {
                 order.items.forEach(i => {
                     if (typeof i === 'object' && i !== null) {
@@ -274,51 +358,50 @@ if (!isset($_SESSION['user_id'])) {
                         subtotal += itemSubtotal;
                         totalDiscount += itemDiscount;
                         total += itemSubtotal - itemDiscount;
-                        html += `<li>${i.name ? i.name : ''} x ${qty} - $${(itemSubtotal - itemDiscount).toFixed(2)}`;
-                        if (discount > 0) {
-                            html += ` <span style='color:#888;font-size:0.97em;'>(-${discount}%: -$${itemDiscount.toFixed(2)})</span>`;
-                        }
-                        html += `</li>`;
-                    } else {
-                        html += `<li>${i}</li>`;
+                        html += `<tr>`;
+                        html += `<td data-label='Name' style='padding:4px 6px;font-family:Khmer OS Siemreap,Arial,sans-serif;'>${i.name ? i.name : ''}</td>`;
+                        html += `<td data-label='Qty' style='padding:4px 6px;text-align:center;'>${qty}</td>`;
+                        html += `<td data-label='Price' style='padding:4px 6px;text-align:right;'>$${price.toFixed(2)}</td>`;
+                        html += `<td data-label='Discount' style='padding:4px 6px;text-align:center;'>${discount > 0 ? '-' + discount + '%' : ''}</td>`;
+                        html += `<td data-label='Total' style='padding:4px 6px;text-align:right;'>$${(itemSubtotal - itemDiscount).toFixed(2)}</td>`;
+                        html += `</tr>`;
                     }
                 });
             }
-            html += `</ul>`;
-            html += `<div style='margin:8px 0;'><b>Subtotal:</b> $${subtotal.toFixed(2)}</div>`;
-            if (totalDiscount > 0) html += `<div style='margin:8px 0;'><b>Discount:</b> -$${totalDiscount.toFixed(2)}</div>`;
-            html += `<div style='margin:8px 0;'><b>Total:</b> $${(subtotal - totalDiscount).toFixed(2)}</div>`;
-            // Show logo image in receipt (like QR code area)
-            html += `<div id='qrcode' style='text-align:center;margin:16px 0;'><img src="./image/image.png" alt="Logo" style="width:140px;height:130px;display:inline-block;"></div>`;
-            html += `<div style='text-align:center;margin:12px 0;color:#28a745;font-weight:bold;'>Thank you for your order!</div>`;
-            html += `<button id='auto-print-btn' onclick='window.print()' style='background:#007bff;color:#fff;padding:8px 18px;border:none;border-radius:4px;margin-right:8px;'>Print</button>`;
-            html += `<button onclick='document.getElementById("receipt-modal").style.display="none"' style='background:#ccc;padding:8px 18px;border:none;border-radius:4px;'>Close</button>`;
+
+            const discountPercent = subtotal > 0 ? (totalDiscount / subtotal) * 100 : 0;
+
+            html += `</tbody></table>`;
+            html += `<table style='width:100%;border-collapse:collapse;font-size:1em;'>`;
+            html += `<tr><td><b>Subtotal:</b></td><td style='text-align:right;'>$${subtotal.toFixed(2)}</td></tr>`;
+            if (totalDiscount > 0) {
+                html += `<tr><td><b>Discount:</b></td><td style='text-align:right;'>-$${totalDiscount.toFixed(2)} (${discountPercent.toFixed(2)}%) <span style='color:red;font-size:0.97em;'>(-${(totalDiscount*4000).toLocaleString('en-US')} ៛)</span></td></tr>`;
+            }
+            html += `<tr><td><b>Total:</b></td><td style='text-align:right;font-weight:bold;color:blue;'>$${total.toFixed(2)} <span style='color:red;font-size:0.97em;'>(${(total*4000).toLocaleString('en-US')} ៛)</span></td></tr>`;
+            html += `</table>`;
+
+            html += `<div id='qrcode' style='text-align:center;margin:16px 0;'></div>`;
+            html += `<div style='text-align:center;margin:12px 0;color:#28a745;font-weight:bold;font-family:Khmer OS Siemreap,Arial,sans-serif;'>សូមអរគុណសម្រាប់ការកម្ម៉ង់🙏!<br>Thank you for order at Friend's Meet🙏!<br>Design By <bold>Mrr. Phors</div>`;
+            html += `<button id='print-receipt-btn' onclick='window.print()' style='background:#007bff;color:#fff;padding:8px 18px;border:none;border-radius:4px;margin-right:8px;font-family:Khmer OS Siemreap,Arial,sans-serif;'>Print</button>`;
+            html += `<button onclick='document.getElementById("receipt-modal").style.display="none";location.reload();' style='background:#ccc;padding:8px 18px;border:none;border-radius:4px;font-family:Khmer OS Siemreap,Arial,sans-serif;'>Close</button>`;
             html += `</div>`;
+
             document.getElementById('receipt-content').innerHTML = html;
             document.getElementById('receipt-modal').style.display = 'flex';
 
-            // Auto trigger print dialog after rendering
             setTimeout(() => {
-                const printBtn = document.getElementById('auto-print-btn');
-                if (printBtn) printBtn.click();
-            }, 300);
+                window.print();
+            }, 400);
 
-            // Add X icon handler: just close and refresh
-            setTimeout(() => {
-                const xBtn = document.getElementById('close-receipt-x');
-                if (xBtn) {
-                    xBtn.onclick = function() {
-                        document.getElementById('receipt-modal').style.display = 'none';
-                        location.reload();
-                    };
-                }
-            }, 100);
+            // Generate QR code (e.g., for customer menu)
+            generateQRCode(order.id);
         }
+
 
         function generateQRCode(orderId) {
             // Show only your image in the QR code area
             const qrDiv = document.getElementById('qrcode');
-            qrDiv.innerHTML = `<img src="./image/image.png" alt="Logo" style="width:140px;height:130px;display:inline-block;">`;
+            qrDiv.innerHTML = `<img src="./image/image.png" alt="Logo" style="width:140px;height:140px;display:inline-block;">`;
         }
 
         function showToast(msg) {
@@ -343,6 +426,14 @@ if (!isset($_SESSION['user_id'])) {
                 pdf.save('orders.pdf');
             });
         }
+
+        // Handle close receipt X icon
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.id === 'close-receipt-x') {
+                document.getElementById('receipt-modal').style.display = 'none';
+                location.reload();
+            }
+        });
     </script>
 </body>
 
