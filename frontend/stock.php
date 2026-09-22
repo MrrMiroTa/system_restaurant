@@ -61,63 +61,28 @@ if ($_SESSION['role'] !== 'admin') {
             margin-top: 8px;
         }
 
-        @media (max-width: 1000px) {
-            .stock-list {
-                gap: 16px;
-            }
-
-            .stock-item {
-                width: 48vw;
-                min-width: 180px;
-                max-width: 320px;
-            }
+        .stock-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px #eee;
+            overflow: hidden;
         }
 
-        @media (max-width: 768px) {
-            .sidebar {
-                left: -250px;
-                width: 220px;
-            }
-
-            .sidebar.active {
-                left: 0;
-            }
-
-            .main-content {
-                margin-left: 0 !important;
-                padding: 10px;
-            }
-
-            .stock-list {
-                flex-direction: column;
-                align-items: center;
-                gap: 12px;
-            }
-
-            .stock-item {
-                width: 95vw;
-                max-width: 350px;
-            }
-
-            #stock-form {
-                max-width: 98vw;
-            }
+        .stock-table th,
+        .stock-table td {
+            padding: 10px 6px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
         }
 
-        @media (max-width: 500px) {
-            .stock-item {
-                width: 98vw;
-                max-width: 99vw;
-                padding: 8px;
-            }
+        .stock-table th {
+            background: #f5f5f5;
+        }
 
-            .main-content {
-                padding: 2px;
-            }
-
-            #stock-form {
-                padding: 8px;
-            }
+        .stock-table td {
+            vertical-align: middle;
         }
 
         /* Modal styles */
@@ -161,6 +126,45 @@ if ($_SESSION['role'] !== 'admin') {
         #history-table th {
             background: #f5f5f5;
         }
+
+        @media (max-width: 900px) {
+            #stock-table th,
+            #stock-table td {
+                font-size: 0.9em;
+                padding: 6px 4px;
+            }
+
+            .stock-table td button {
+                font-size: 0.8em;
+                padding: 4px 8px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            #stock-table {
+                font-size: 0.85em;
+            }
+
+            #stock-table th,
+            #stock-table td {
+                padding: 4px 2px;
+            }
+
+            .stock-table td button {
+                display: block;
+                width: 100%;
+                margin-bottom: 4px;
+                font-size: 0.75em;
+            }
+        }
+
+        @media (max-width: 400px) {
+            #stock-table th,
+            #stock-table td {
+                font-size: 0.75em;
+                padding: 3px 1px;
+            }
+        }
     </style>
 </head>
 
@@ -184,7 +188,7 @@ if ($_SESSION['role'] !== 'admin') {
             <input type="number" step="0.01" name="price" placeholder="Price" required>
             <button type="submit">Add Stock</button>
         </form>
-        <div id="stock-list" class="stock-list"></div>
+        <div id="stock-list"></div>
         <button id="export-history-btn" class="add-btn" style="background:#343a40;margin-bottom:18px;float:right;">Export & Cleanup Old History</button>
     </div>
 
@@ -227,7 +231,7 @@ if ($_SESSION['role'] !== 'admin') {
                 list.innerHTML = '<div style="color:#888;text-align:center;">No stock items found.</div>';
                 return;
             }
-            let html = `<table id="stock-table" style="width:100%;border-collapse:collapse;box-shadow:0 2px 12px #eee;background:#fff;border-radius:8px;overflow:hidden;">
+            let html = `<table id="stock-table" class="stock-table" style="width:100%;border-collapse:collapse;box-shadow:0 2px 12px #eee;background:#fff;border-radius:8px;overflow:hidden;">
                 <thead>
                     <tr style='background:#f5f5f5;'>
                         <th style="padding:10px 6px;">Picture</th>

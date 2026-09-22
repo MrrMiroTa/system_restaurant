@@ -100,20 +100,6 @@ if ($_SESSION['role'] !== 'admin') {
         }
 
         @media (max-width: 768px) {
-            .sidebar {
-                left: -250px;
-                width: 220px;
-            }
-
-            .sidebar.active {
-                left: 0;
-            }
-
-            .main-content {
-                margin-left: 0 !important;
-                padding: 10px;
-            }
-
             .menu-list {
                 flex-direction: column;
                 align-items: center;
@@ -137,10 +123,6 @@ if ($_SESSION['role'] !== 'admin') {
                 padding: 8px;
             }
 
-            .main-content {
-                padding: 2px;
-            }
-
             #menu-form {
                 padding: 8px;
             }
@@ -150,20 +132,7 @@ if ($_SESSION['role'] !== 'admin') {
 
 <body>
     <?php include 'header.php'; ?>
-    <div class="sidebar" id="sidebar">
-        <div class="logo">🍽️ Restaurant</div>
-        <button class="menu-toggle" onclick="toggleMenu()">☰</button>
-        <button class="menu-close" onclick="toggleMenu()">&times;</button>
-        <ul class="menu">
-            <li><a href="dashboard.php">Dashboard</a></li>
-            <li><a href="menu.php">Menu</a></li>
-            <li><a href="stock.php">Stock</a></li>
-            <li><a href="order.php">Orders</a></li>
-            <li><a href="admin_menu.php">Admin Menu</a></li>
-            <li><a href="customer_menu.php">Customer Menu</a></li>
-            <li><a href="logout.php">Logout</a></li>
-        </ul>
-    </div>
+    <?php include 'navmenu.php'; ?>
     <div class="main-content">
         <h1 style="text-align:center;">All Menu</h1>
         <button id="show-menu-form-btn" class="add-btn">+ Add Menu Item</button>

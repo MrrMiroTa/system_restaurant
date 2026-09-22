@@ -1,33 +1,48 @@
 <?php
 require 'db.php';
-session_start();
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $login = $conn->real_escape_string($_POST['username']); // can be username or email
-    $password = $_POST['password'];
-    $sql = "SELECT * FROM users WHERE username='$login' OR email='$login'";
-    $result = $conn->query($sql);
-    if ($result && $row = $result->fetch_assoc()) {
-        if (password_verify($password, $row['password'])) {
-            $_SESSION['user_id'] = $row['id'];
-            $_SESSION['role'] = $row['role'];
-            $_SESSION['username'] = $row['username'];
-            // Remember Me implementation
-            if (!empty($_POST['remember_me'])) {
-                $token = bin2hex(random_bytes(32));
-                setcookie('rememberme', $token, time() + (86400 * 30), "/", "", false, true); // 30 days, httpOnly
-                // Store token in DB
-                $conn->query("UPDATE users SET remember_token='$token' WHERE id=" . $row['id']);
-            }
-            if ($row['role'] === 'admin') {
-                header('Location: ../frontend/dashboard.php');
-            } else {
-                header('Location: ../frontend/customer_menu.php');
-            }
-            exit();
-        } else {
-            echo "Invalid password.";
-        }
-    } else {
-        echo "User not found.";
-    }
+ensure_session();
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    safe_redirect('../frontend/index.php');
 }
+
+$login = sanitize_text($_POST['username'] ?? '');
+$password = $_POST['password'] ?? '';
+
+if ($login === '' || $password === '') {
+    safe_redirect('../frontend/index.php?login=failed');
+}
+
+$stmt = $conn->prepare('SELECT id, username, password, role FROM users WHERE username = ? OR email = ? LIMIT 1');
+$stmt->bind_param('ss', $login, $login);
+$stmt->execute();
+$user = $stmt->get_result()->fetch_assoc();
+
+if (!$user || !password_verify($password, $user['password'])) {
+    safe_redirect('../frontend/index.php?login=failed');
+}
+
+$_SESSION['user_id'] = (int)$user['id'];
+$_SESSION['role'] = $user['role'];
+$_SESSION['username'] = $user['username'];
+
+if (!empty($_POST['remember_me'])) {
+    $token = bin2hex(random_bytes(32));
+    setcookie('rememberme', $token, [
+        'expires' => time() + (86400 * 30),
+        'path' => '/',
+        'secure' => false,
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+
+    $updateStmt = $conn->prepare('UPDATE users SET remember_token = ? WHERE id = ?');
+    $updateStmt->bind_param('si', $token, $user['id']);
+    $updateStmt->execute();
+}
+
+if ($user['role'] === 'admin') {
+    safe_redirect('../frontend/dashboard.php');
+}
+
+safe_redirect('../frontend/customer_menu.php');

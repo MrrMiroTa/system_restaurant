@@ -1,38 +1,50 @@
 <?php
 require 'db.php';
-session_start();
+ensure_session();
+
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo 'Unauthorized';
     exit();
 }
+
 $order_id = isset($_GET['order_id']) ? (int)$_GET['order_id'] : 0;
 if ($order_id <= 0) {
     echo 'Invalid order ID';
     exit();
 }
-$res = $conn->query("SELECT * FROM orders WHERE id = $order_id");
-$order = $res->fetch_assoc();
-// Get user/admin name
+
+$orderStmt = $conn->prepare('SELECT * FROM orders WHERE id = ?');
+$orderStmt->bind_param('i', $order_id);
+$orderStmt->execute();
+$order = $orderStmt->get_result()->fetch_assoc();
+if (!$order) {
+    echo 'Order not found';
+    exit();
+}
+
 $user_name = '';
-if ($order && isset($order['user_id'])) {
-    $user_res = $conn->query("SELECT username, role FROM users WHERE id = " . (int)$order['user_id']);
-    if ($user_res && $user_row = $user_res->fetch_assoc()) {
-        $user_name = $user_row['username'] . ' (' . $user_row['role'] . ')';
+if (isset($order['user_id'])) {
+    $userStmt = $conn->prepare('SELECT username, role FROM users WHERE id = ?');
+    $userStmt->bind_param('i', $order['user_id']);
+    $userStmt->execute();
+    $userRow = $userStmt->get_result()->fetch_assoc();
+    if ($userRow) {
+        $user_name = $userRow['username'] . ' (' . $userRow['role'] . ')';
     }
 }
-$res_items = $conn->query("SELECT oi.*, m.name FROM order_items oi JOIN menu m ON oi.menu_id = m.id WHERE oi.order_id = $order_id");
-$items = [];
-while ($row = $res_items->fetch_assoc()) {
-    $items[] = $row;
-}
+
+$itemsStmt = $conn->prepare('SELECT oi.*, m.name FROM order_items oi JOIN menu m ON oi.menu_id = m.id WHERE oi.order_id = ?');
+$itemsStmt->bind_param('i', $order_id);
+$itemsStmt->execute();
+$items = $itemsStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <title>Receipt #<?php echo $order_id; ?></title>
+    <title>Receipt #<?php echo htmlspecialchars((string)$order_id); ?></title>
     <style>
         body {
             font-family: monospace;
@@ -69,7 +81,7 @@ while ($row = $res_items->fetch_assoc()) {
 <body>
     <div class="receipt">
         <h2>Restaurant Receipt</h2>
-        <p>Order #: <?php echo $order_id; ?><br>Date: <?php echo $order['date_created']; ?></p>
+        <p>Order #: <?php echo htmlspecialchars((string)$order_id); ?><br>Date: <?php echo htmlspecialchars((string)$order['date_created']); ?></p>
         <p>Ordered by: <strong><?php echo htmlspecialchars($user_name); ?></strong></p>
         <table>
             <tr>
@@ -79,14 +91,14 @@ while ($row = $res_items->fetch_assoc()) {
             </tr>
             <?php foreach ($items as $item): ?>
                 <tr>
-                    <td><?php echo htmlspecialchars($item['name']); ?></td>
-                    <td><?php echo $item['qty']; ?></td>
-                    <td><?php echo number_format($item['price'], 2); ?></td>
+                    <td><?php echo htmlspecialchars((string)$item['name']); ?></td>
+                    <td><?php echo htmlspecialchars((string)$item['qty']); ?></td>
+                    <td><?php echo number_format((float)$item['price'], 2); ?></td>
                 </tr>
             <?php endforeach; ?>
             <tr class="total">
                 <td colspan="2">Total</td>
-                <td><?php echo number_format($order['total_price'], 2); ?></td>
+                <td><?php echo number_format((float)$order['total_price'], 2); ?></td>
             </tr>
         </table>
     </div>

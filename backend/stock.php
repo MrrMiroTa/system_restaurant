@@ -1,45 +1,56 @@
 <?php
 require 'db.php';
-session_start();
+ensure_session();
+
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
     exit();
 }
+
 header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';
-$user_id = $_SESSION['user_id'];
+$user_id = (int)$_SESSION['user_id'];
 
 switch ($action) {
     case 'list':
-        $result = $conn->query("SELECT * FROM stock ORDER BY date_created DESC");
+        $result = $conn->query('SELECT * FROM stock ORDER BY date_created DESC');
         $data = [];
         while ($row = $result->fetch_assoc()) {
             $data[] = $row;
         }
         echo json_encode($data);
         break;
+
     case 'add':
-        $name = $conn->real_escape_string($_POST['name']);
-        $category = $conn->real_escape_string($_POST['category']);
-        $description = $conn->real_escape_string($_POST['description']);
-        $qty = (int)$_POST['qty'];
-        $price = (float)$_POST['price'];
+        $name = sanitize_text($_POST['name'] ?? '');
+        $category = sanitize_text($_POST['category'] ?? '');
+        $description = sanitize_text($_POST['description'] ?? '');
+        $qty = max(0, (int)($_POST['qty'] ?? 0));
+        $price = (float)($_POST['price'] ?? 0);
+
+        if ($name === '' || $price < 0) {
+            handle_json_error('Invalid stock item data');
+        }
+
         $picture = '';
         if (!empty($_FILES['picture']['name'])) {
-            $target = '../uploads/' . basename($_FILES['picture']['name']);
-            if (move_uploaded_file($_FILES['picture']['tmp_name'], $target)) {
-                $picture = $target;
+            $picture = handle_upload($_FILES['picture'], '../uploads');
+            if ($picture === '') {
+                handle_json_error('Invalid image upload');
             }
         }
-        $sql = "INSERT INTO stock (name, picture, category, description, qty, price, created_by) VALUES ('$name', '$picture', '$category', '$description', $qty, $price, $user_id)";
-        if ($conn->query($sql)) {
+
+        $stmt = $conn->prepare('INSERT INTO stock (name, picture, category, description, qty, price, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        $stmt->bind_param('ssssidi', $name, $picture, $category, $description, $qty, $price, $user_id);
+
+        if ($stmt->execute()) {
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['success' => false, 'error' => $conn->error]);
+            echo json_encode(['success' => false, 'error' => $stmt->error]);
         }
         break;
-    // Add update/delete as needed
+
     default:
         echo json_encode(['error' => 'Invalid action']);
 }

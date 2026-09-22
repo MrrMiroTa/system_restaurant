@@ -1,64 +1,63 @@
 <?php
 require 'db.php';
-session_start();
+ensure_session();
+
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
     exit();
 }
+
 header('Content-Type: application/json');
-
-// Total sales today
 $today = date('Y-m-d');
-$res = $conn->query("SELECT SUM(total_price) as total, COUNT(*) as qty FROM orders WHERE DATE(date_created) = '$today' AND status='paid'");
-$row = $res->fetch_assoc();
-$sales_today = $row['total'] ?? 0;
-$qty_today = $row['qty'] ?? 0;
-
-// Total sales this month
 $month = date('Y-m');
-$res = $conn->query("SELECT SUM(total_price) as total, COUNT(*) as qty FROM orders WHERE DATE_FORMAT(date_created, '%Y-%m') = '$month' AND status='paid'");
-$row = $res->fetch_assoc();
-$sales_month = $row['total'] ?? 0;
-$qty_month = $row['qty'] ?? 0;
 
-// Top ordered menu
-$res = $conn->query("SELECT m.name, SUM(oi.qty) as total_qty FROM order_items oi JOIN menu m ON oi.menu_id = m.id GROUP BY oi.menu_id ORDER BY total_qty DESC LIMIT 5");
+$summaryStmt = $conn->prepare('SELECT SUM(total_price) AS total, COUNT(*) AS qty FROM orders WHERE DATE(date_created) = ? AND status = "paid"');
+$summaryStmt->bind_param('s', $today);
+$summaryStmt->execute();
+$row = $summaryStmt->get_result()->fetch_assoc();
+$sales_today = (float)($row['total'] ?? 0);
+$qty_today = (int)($row['qty'] ?? 0);
+
+$monthStmt = $conn->prepare('SELECT SUM(total_price) AS total, COUNT(*) AS qty FROM orders WHERE DATE_FORMAT(date_created, "%Y-%m") = ? AND status = "paid"');
+$monthStmt->bind_param('s', $month);
+$monthStmt->execute();
+$row = $monthStmt->get_result()->fetch_assoc();
+$sales_month = (float)($row['total'] ?? 0);
+$qty_month = (int)($row['qty'] ?? 0);
+
+$topMenuStmt = $conn->prepare('SELECT m.name, SUM(oi.qty) AS total_qty FROM order_items oi JOIN menu m ON oi.menu_id = m.id GROUP BY oi.menu_id, m.name ORDER BY total_qty DESC LIMIT 5');
+$topMenuStmt->execute();
 $top_menu = [];
-while ($row = $res->fetch_assoc()) {
+foreach ($topMenuStmt->get_result()->fetch_all(MYSQLI_ASSOC) as $row) {
     $top_menu[] = $row;
 }
 
-// Low stock alert
-$res = $conn->query("SELECT * FROM stock WHERE qty < 5");
-$low_stock = [];
-while ($row = $res->fetch_assoc()) {
-    $low_stock[] = $row;
-}
+$lowStockStmt = $conn->prepare('SELECT * FROM stock WHERE qty < 5');
+$lowStockStmt->execute();
+$low_stock = $lowStockStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-// Most ordered today
-
-// Fix: also select menu.id for uniqueness, and cast total_qty as int
-// Get all ordered items today, sorted by quantity desc
-$res = $conn->query("SELECT m.id, m.name, SUM(oi.qty) as total_qty FROM order_items oi JOIN menu m ON oi.menu_id = m.id JOIN orders o ON oi.order_id = o.id WHERE DATE(o.date_created) = '$today' AND o.status='paid' GROUP BY oi.menu_id, m.name, m.id ORDER BY total_qty DESC");
-
+$mostOrderedStmt = $conn->prepare('SELECT m.id, m.name, SUM(oi.qty) AS total_qty FROM order_items oi JOIN menu m ON oi.menu_id = m.id JOIN orders o ON oi.order_id = o.id WHERE DATE(o.date_created) = ? AND o.status = "paid" GROUP BY oi.menu_id, m.name, m.id ORDER BY total_qty DESC');
+$mostOrderedStmt->bind_param('s', $today);
+$mostOrderedStmt->execute();
 $most_ordered_today = [];
-while ($row = $res->fetch_assoc()) {
+foreach ($mostOrderedStmt->get_result()->fetch_all(MYSQLI_ASSOC) as $row) {
     $row['total_qty'] = (int)$row['total_qty'];
     $most_ordered_today[] = $row;
 }
-// Always return an array (empty if no orders)
 
 if (isset($_GET['action']) && $_GET['action'] === 'sales_chart') {
     $days = 7;
     $data = [];
     for ($i = $days - 1; $i >= 0; $i--) {
         $date = date('Y-m-d', strtotime("-$i days"));
-        $res = $conn->query("SELECT SUM(total_price) as total FROM orders WHERE DATE(date_created) = '$date' AND status='paid'");
-        $row = $res->fetch_assoc();
+        $chartStmt = $conn->prepare('SELECT SUM(total_price) AS total FROM orders WHERE DATE(date_created) = ? AND status = "paid"');
+        $chartStmt->bind_param('s', $date);
+        $chartStmt->execute();
+        $row = $chartStmt->get_result()->fetch_assoc();
         $data[] = [
             'date' => $date,
-            'total' => $row['total'] ? round($row['total'], 2) : 0
+            'total' => $row['total'] ? round((float)$row['total'], 2) : 0,
         ];
     }
     echo json_encode($data);
@@ -72,5 +71,5 @@ echo json_encode([
     'qty_month' => $qty_month,
     'top_menu' => $top_menu,
     'low_stock' => $low_stock,
-    'most_ordered_today' => $most_ordered_today
+    'most_ordered_today' => $most_ordered_today,
 ]);

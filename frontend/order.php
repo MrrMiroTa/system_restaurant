@@ -21,17 +21,6 @@ if (!isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="dashboard.css">
     <style>
-        .main-content {
-            margin-left: 260px;
-            max-width: 900px;
-            margin-top: 40px;
-            margin-bottom: 40px;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 2px 16px #e0e0e0;
-            padding: 32px 24px;
-        }
-
         h1 {
             text-align: center;
             margin-bottom: 32px;
@@ -77,9 +66,17 @@ if (!isset($_SESSION['user_id'])) {
             background: #b52a37;
         }
 
+        .print-receipt-btn {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+        }
+
         @media (max-width: 900px) {
             .main-content {
-                margin-left: 0;
                 padding: 16px 4vw;
             }
         }
@@ -89,49 +86,58 @@ if (!isset($_SESSION['user_id'])) {
                 padding: 8px 2vw;
             }
 
-            .order-item {
-                font-size: 0.98em;
-                padding: 12px 8px;
-            }
-
-            /* Responsive receipt items table: show as flex rows/cards */
-            #receipt-content table,
-            #receipt-content thead,
-            #receipt-content tbody,
-            #receipt-content tr {
-                display: block;
-                width: 100%;
-            }
-
-            #receipt-content thead {
-                display: none;
-            }
-
-            #receipt-content tr {
-                margin-bottom: 10px;
-                background: #f9f9f9;
-                border-radius: 6px;
-                box-shadow: 0 1px 4px #eee;
-                padding: 8px 4px;
-            }
-
-            #receipt-content td {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
+            .order-table th,
+            .order-table td {
+                font-size: 0.9em;
                 padding: 6px 4px;
-                border: none !important;
-                font-size: 1em;
             }
+        }
 
-            #receipt-content td:before {
-                content: attr(data-label);
-                font-weight: bold;
-                color: #007bff;
-                flex: 1 1 50%;
-                min-width: 90px;
-                margin-right: 8px;
+        @media (max-width: 400px) {
+            .order-table th,
+            .order-table td {
+                font-size: 0.8em;
+                padding: 4px 2px;
             }
+        }
+
+        /* Responsive receipt items table: show as flex rows/cards */
+        #receipt-content table,
+        #receipt-content thead,
+        #receipt-content tbody,
+        #receipt-content tr {
+            display: block;
+            width: 100%;
+        }
+
+        #receipt-content thead {
+            display: none;
+        }
+
+        #receipt-content tr {
+            margin-bottom: 10px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            box-shadow: 0 1px 4px #eee;
+            padding: 8px 4px;
+        }
+
+        #receipt-content td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 4px;
+            border: none !important;
+            font-size: 1em;
+        }
+
+        #receipt-content td:before {
+            content: attr(data-label);
+            font-weight: bold;
+            color: #007bff;
+            flex: 1 1 50%;
+            min-width: 90px;
+            margin-right: 8px;
         }
     </style>
 </head>
@@ -212,7 +218,7 @@ if (!isset($_SESSION['user_id'])) {
                     <td>${order.date_created}</td>
                     <td>
                         ${USER_ROLE === 'admin' ? `<button class="delete-btn" data-id="${order.id}" title="Delete this order"><span class="delete-text">Delete</span><span class="delete-loading" style="display:none;">...</span></button>` : ''}
-                        <button class="print-receipt-btn" data-id="${order.id}" title="Print Receipt" style="background:#007bff;color:#fff;border:none;border-radius:4px;padding:6px 12px;margin-left:6px;cursor:pointer;">Print Receipt</button>
+                        <button class="print-receipt-btn" data-id="${order.id}" title="Print Receipt" style="margin-left:6px;">Print Receipt</button>
                     </td>
                 </tr>
             `).join('');
@@ -292,7 +298,7 @@ if (!isset($_SESSION['user_id'])) {
                             btn.querySelector('.delete-loading').style.display = 'none';
                             if (data.success) {
                                 showToast('Order deleted!');
-                                setTimeout(() => location.reload(), 800); // Only reload, do not call fetchOrders() before reload
+                                setTimeout(() => location.reload(), 800);
                             } else alert('Delete failed');
                         });
                 }

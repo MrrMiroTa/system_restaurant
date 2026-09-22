@@ -34,21 +34,6 @@ if (!isset($_SESSION['user_id'])) {
             font-family: 'Khmer OS Siemreap', 'Segoe UI', 'Arial', 'sans-serif' !important;
         }
 
-        body,
-        .main-content,
-        .customer-menu-list,
-        .customer-menu-item,
-        .sidebar,
-        .category-btn,
-        #cart-modal,
-        #receipt-modal,
-        #cart-total,
-        #cart-items,
-        #cart-btn,
-        .cart-badge {
-            font-family: 'Khmer OS Siemreap', 'Segoe UI', 'Arial', 'sans-serif';
-        }
-
         .customer-menu-list {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -72,67 +57,6 @@ if (!isset($_SESSION['user_id'])) {
             .customer-menu-list {
                 grid-template-columns: 1fr;
             }
-
-            .main-content {
-                margin-left: 0 !important;
-                padding: 10px;
-            }
-
-            .sidebar {
-                width: 220px;
-                left: -220px;
-                transition: left 0.3s;
-            }
-
-            .sidebar.active {
-                left: 0;
-            }
-        }
-
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: -250px;
-            width: 250px;
-            height: 100vh;
-            background: #222;
-            color: #fff;
-            z-index: 1200;
-            transition: left 0.3s;
-        }
-
-        .sidebar.active {
-            left: 0;
-        }
-
-        .sidebar .logo {
-            font-size: 1.5em;
-            font-weight: bold;
-            padding: 24px 20px 12px 20px;
-        }
-
-        .sidebar .menu-toggle,
-        .sidebar .menu-close {
-            display: block;
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 2em;
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 1300;
-        }
-
-        @media (min-width: 901px) {
-            .sidebar {
-                left: 0;
-            }
-
-            .sidebar .menu-toggle,
-            .sidebar .menu-close {
-                display: none;
-            }
         }
 
         .customer-menu-item {
@@ -146,13 +70,12 @@ if (!isset($_SESSION['user_id'])) {
             margin-bottom: 24px;
         }
 
-        /* Ensure all menu and cart images are equal size */
         .customer-menu-item img {
             width: 100px;
             height: 100px;
             object-fit: cover;
             border-radius: 6px;
-            border: 1px solidrgb(96, 78, 78);
+            border: 1px solid rgb(96, 78, 78);
             margin-bottom: 10px;
             background: #f8f8f8;
         }
@@ -190,25 +113,6 @@ if (!isset($_SESSION['user_id'])) {
             color: rgb(0, 39, 81);
             font-size: 2.2em;
             margin-bottom: 24px;
-        }
-
-        .main-content {
-            margin-left: 230px;
-            padding: 10px 32px 32px 32px;
-            background: rgba(184, 221, 253, 0.95);
-            border-radius: 18px;
-            box-shadow: 0 4px 32px #b6c6e0aa;
-            max-width: 1100px;
-            margin-top: 36px;
-            margin-bottom: 36px;
-            transition: margin-left 0.3s;
-        }
-
-        @media (max-width: 600px) {
-            .main-content {
-                margin-left: 0 !important;
-                padding: 10px;
-            }
         }
 
         .category-btn {
@@ -327,6 +231,20 @@ if (!isset($_SESSION['user_id'])) {
             margin: auto;
             box-shadow: 0 2px 16px #888;
         }
+
+        @media (max-width: 600px) {
+            #cart-modal {
+                width: 100vw;
+            }
+
+            .floating-cart-btn {
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+                font-size: 24px;
+            }
+        }
     </style>
 </head>
 
@@ -336,22 +254,22 @@ if (!isset($_SESSION['user_id'])) {
 
     <div class="main-content">
         <h1 style="text-align:center;">Menu</h1>
-        <div id="category-filter-bar" style="display:flex;gap:12px;justify-content:center;margin-bottom:24px;"></div>
+        <div id="category-filter-bar" style="display:flex;gap:12px;justify-content:center;margin-bottom:24px;flex-wrap:wrap;"></div>
         <div id="customer-menu-list" class="customer-menu-list"></div>
     </div>
-    <div id="cart-modal" style="display:none;position:fixed;top:0;right:0;width:350px;height:100vh;background:#fff;box-shadow:-2px 0 8px #ccc;z-index:1000;padding:24px;overflow-y:auto;">
+    <div id="cart-modal">
         <h2>🛒 Your Cart</h2>
         <div id="cart-items"></div>
         <div id="cart-total" style="margin:16px 0;font-weight:bold;"></div>
-        <button id="checkout-btn" style="background:#28a745;color:#fff;padding:10px 20px;border:none;border-radius:4px;cursor:pointer;">Checkout</button>
+        <button id="checkout-btn">Checkout</button>
         <button onclick="toggleCart(false)" style="margin-left:10px;background:#ccc;">Close</button>
     </div>
-    <div id="receipt-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:2000;align-items:center;justify-content:center;">
-        <div id="receipt-content" style="background:#fff;padding:32px 24px;border-radius:8px;max-width:400px;width:100%;margin:auto;box-shadow:0 2px 16px #888;">
+    <div id="receipt-modal">
+        <div id="receipt-content">
             <!-- Receipt will be rendered here -->
         </div>
     </div>
-    <button onclick="toggleCart(true)" class="floating-cart-btn" id="cart-btn" style="position:fixed;bottom:32px;right:32px;">
+    <button onclick="toggleCart(true)" class="floating-cart-btn" id="cart-btn">
         🛒
         <span class="cart-badge" id="cart-badge" style="display:none;">0</span>
     </button>
@@ -362,6 +280,7 @@ if (!isset($_SESSION['user_id'])) {
         let allMenuItems = [];
         let currentCategory = 'All';
         let cart = [];
+        let receiptModalOpen = false;
 
         // Load cart from localStorage if exists
         function loadCart() {
@@ -561,7 +480,7 @@ if (!isset($_SESSION['user_id'])) {
             }
             menuList.innerHTML = items.map(item => `
                 <div class="customer-menu-item">
-                    <img src="${item.picture || ''}" alt="${item.name}" class="customer-menu-item">
+                    <img src="${item.picture || ''}" alt="${item.name}">
                     <div style="font-weight:600;font-size:1.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;"><b>${item.name}</b></div>
                     <div>${item.category}</div>
                     <div>${item.description}</div>
@@ -660,14 +579,13 @@ if (!isset($_SESSION['user_id'])) {
                     try {
                         return JSON.parse(text);
                     } catch (e) {
-                        // Log raw response for debugging
                         console.error('Raw backend response:', text);
                         alert('Order error: Backend did not return valid JSON. See console for details.');
                         throw e;
                     }
                 })
                 .then(data => {
-                    console.log('Order response:', data); // Debug log
+                    console.log('Order response:', data);
                     if (data.success) {
                         alert('Order placed successfully!');
                         showReceipt(data.order_id, items, subtotal, totalDiscount, total, note);
@@ -687,12 +605,10 @@ if (!isset($_SESSION['user_id'])) {
                 });
         };
 
-        let receiptModalOpen = false;
-
         // Update showReceipt to show discount and note
         function showReceipt(orderId, items, subtotal, discount, total, note) {
             try {
-                receiptModalOpen = false;
+                receiptModalOpen = true;
                 const now = new Date();
                 let adminName = typeof ADMIN_NAME !== 'undefined' ? ADMIN_NAME : '';
 
@@ -786,10 +702,9 @@ if (!isset($_SESSION['user_id'])) {
             }
         }
 
-
-
         // New function for X button: just close and reload, do not delete order
         function closeReceiptAndBack() {
+            receiptModalOpen = false;
             document.getElementById('receipt-modal').style.display = 'none';
             location.reload();
         }
@@ -812,7 +727,6 @@ if (!isset($_SESSION['user_id'])) {
         if (receiptModal) {
             receiptModal.addEventListener('click', function(e) {
                 if (receiptModalOpen && e.target === receiptModal) {
-                    // Do nothing, require explicit close
                     e.stopPropagation();
                 }
             });

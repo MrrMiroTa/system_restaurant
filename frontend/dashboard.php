@@ -61,8 +61,8 @@ if (!isset($_SESSION['user_id'])) {
     .restaurant-report-table th,
     .restaurant-report-table td {
         border: 1px solid #eee;
-        /* padding: 8px 10px; */
         text-align: left;
+        padding: 8px 10px;
     }
 
     .restaurant-report-table th {
@@ -75,18 +75,94 @@ if (!isset($_SESSION['user_id'])) {
         vertical-align: middle;
     }
 
+    .paid-orders-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px #eee;
+        overflow: hidden;
+    }
+
+    .paid-orders-table th,
+    .paid-orders-table td {
+        border: 1px solid #eee;
+        padding: 8px 10px;
+        text-align: left;
+        font-size: 1em;
+    }
+
+    .paid-orders-table th {
+        background: #f5f5f5;
+        color: #007bff;
+        font-weight: 600;
+    }
+
+    .paid-orders-table td {
+        vertical-align: middle;
+    }
+
+    .most-ordered-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px #eee;
+        overflow: hidden;
+        margin-top: 0;
+        margin-bottom: 0.5em;
+        font-size: 1em;
+    }
+
+    .most-ordered-table th,
+    .most-ordered-table td {
+        border: 1px solid #eee;
+        padding: 10px 12px;
+        text-align: left;
+    }
+
+    .most-ordered-table th {
+        background: #f5f5f5;
+        color: #007bff;
+        font-weight: 600;
+    }
+
+    .most-ordered-table td {
+        vertical-align: middle;
+    }
+
+    .most-ordered-table tr:nth-child(even) {
+        background: #fafbfc;
+    }
+
+    .most-ordered-table tr:hover {
+        background: #f0f8ff;
+    }
+
     @media (max-width: 600px) {
 
         .paid-orders-table th,
-        .paid-orders-table td {
+        .paid-orders-table td,
+        .restaurant-report-table th,
+        .restaurant-report-table td,
+        .most-ordered-table th,
+        .most-ordered-table td {
             font-size: 0.98em;
             padding: 6px 4px;
         }
+    }
 
+    @media (max-width: 400px) {
+
+        .paid-orders-table th,
+        .paid-orders-table td,
         .restaurant-report-table th,
-        .restaurant-report-table td {
-            font-size: 0.98em;
-            padding: 6px 4px;
+        .restaurant-report-table td,
+        .most-ordered-table th,
+        .most-ordered-table td {
+            font-size: 0.9em;
+            padding: 4px 2px;
         }
     }
 </style>
@@ -97,7 +173,7 @@ if (!isset($_SESSION['user_id'])) {
     <div class="main-content">
         <h1>Dashboard</h1>
         <div style="margin-bottom:16px;font-size:1.1em;color:#007bff;">
-            Welcome, <b><?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?></b>🤨🤑!
+            Welcome, <b><?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?></b>!
         </div>
         <div class="dashboard-cards">
             <div class="card">
@@ -224,7 +300,7 @@ if (!isset($_SESSION['user_id'])) {
                     let html = `<div style='font-size:1.1em;margin-bottom:10px;'><b>Total Sales Today:</b> <span style='color:#28a745;font-weight:bold;'>$${parseFloat(data.total_sales).toFixed(2)}</span></div>`;
                     html += `<div style='font-size:1.08em;margin-bottom:8px;'><b>All Orders Today:</b></div>`;
                     html += `<table class='restaurant-report-table'>`;
-                    html += `<thead><tr><th style='padding:0 50px 0 50px; color:red;'>Order ID</th><th style='padding:50px 60px;'>User</th><th style='padding:50px 60px;'>Status</th><th style='padding:50px 60px;'>Total</th><th style='padding:50px 60px;'>Time</th></tr></thead><tbody>`;
+                    html += `<thead><tr><th>Order ID</th><th>User</th><th>Status</th><th>Total</th><th>Time</th></tr></thead><tbody>`;
                     html += data.orders.map(order =>
                         `<tr><td style='padding:6px 8px;'>${order.id}</td><td style='padding:6px 8px;'>${order.username}</td><td style='padding:6px 8px;color:green;'>${order.status ? order.status : '-'}</td><td style='padding:6px 8px;'>$${parseFloat(order.total_price).toFixed(2)}</td><td style='padding:6px 8px;'>${order.date_created.substr(11,5)}</td></tr>`
                     ).join('');
@@ -297,83 +373,6 @@ if (!isset($_SESSION['user_id'])) {
                 });
         }
     </script>
-    <style>
-        /* ...existing styles... */
-        .paid-orders-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 8px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px #eee;
-            overflow: hidden;
-        }
-
-        .paid-orders-table th,
-        .paid-orders-table td {
-            border: 1px solid #eee;
-            padding: 8px 10px;
-            text-align: left;
-            font-size: 1em;
-        }
-
-        .paid-orders-table th {
-            background: #f5f5f5;
-            color: #007bff;
-            font-weight: 600;
-        }
-
-        .paid-orders-table td {
-            vertical-align: middle;
-
-            /* Clean style for Most Ordered Today table */
-            .most-ordered-table {
-                width: 100%;
-                border-collapse: collapse;
-                background: #fff;
-                border-radius: 8px;
-                box-shadow: 0 2px 8px #eee;
-                overflow: hidden;
-                margin-top: 0;
-                margin-bottom: 0.5em;
-                font-size: 1em;
-            }
-
-            .most-ordered-table th,
-            .most-ordered-table td {
-                border: 1px solid #eee;
-                padding: 10px 12px;
-                text-align: left;
-            }
-
-            .most-ordered-table th {
-                background: #f5f5f5;
-                color: #007bff;
-                font-weight: 600;
-            }
-
-            .most-ordered-table td {
-                vertical-align: middle;
-            }
-
-            .most-ordered-table tr:nth-child(even) {
-                background: #fafbfc;
-            }
-
-            .most-ordered-table tr:hover {
-                background: #f0f8ff;
-            }
-
-            @media (max-width: 600px) {
-
-                .most-ordered-table th,
-                .most-ordered-table td {
-                    font-size: 0.98em;
-                    padding: 6px 4px;
-                }
-            }
-        }
-    </style>
 </body>
 
 </html>

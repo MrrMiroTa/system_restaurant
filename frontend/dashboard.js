@@ -1,6 +1,6 @@
 function toggleMenu() {
   const sidebar = document.getElementById("sidebar");
-  sidebar.classList.toggle("open");
+  sidebar.classList.toggle("active");
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -120,6 +120,7 @@ function fetchMenu() {
     .then((res) => res.json())
     .then((data) => {
       const menuList = document.getElementById("menu-list");
+      if (!menuList) return;
       menuList.innerHTML = data
         .map(
           (item) => `
@@ -142,6 +143,7 @@ function fetchStock() {
     .then((res) => res.json())
     .then((data) => {
       const stockList = document.getElementById("stock-list");
+      if (!stockList) return;
       stockList.innerHTML = data
         .map(
           (item) => `

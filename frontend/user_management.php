@@ -1,6 +1,7 @@
 <?php
-session_start();
 require_once '../backend/db.php';
+ensure_session();
+
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit();
@@ -10,28 +11,41 @@ if ($_SESSION['role'] !== 'admin') {
     exit();
 }
 
-// Handle create user/admin
+$msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_user'])) {
-    $username = $conn->real_escape_string($_POST['username']);
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-    $email = $conn->real_escape_string($_POST['email']);
-    $role = in_array($_POST['role'], ['admin', 'user']) ? $_POST['role'] : 'user';
-    $created_by = $_SESSION['user_id'];
-    $sql = "INSERT INTO users (username, password, email, role, created_by) VALUES ('$username', '$password', '$email', '$role', $created_by)";
-    $msg = $conn->query($sql) ? ucfirst($role) . ' created successfully.' : 'Error: ' . $conn->error;
-}
+    $username = sanitize_text($_POST['username'] ?? '');
+    $email = sanitize_text($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $role = in_array($_POST['role'] ?? '', ['admin', 'user'], true) ? $_POST['role'] : 'user';
+    $created_by = (int)$_SESSION['user_id'];
 
-// Handle delete user
-if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
-    $id = intval($_GET['delete']);
-    // Prevent admin from deleting themselves
-    if ($id != $_SESSION['user_id']) {
-        $conn->query("DELETE FROM users WHERE id=$id");
+    if (strlen($username) < 3 || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 8) {
+        $msg = 'Please provide valid username, email, and a password with at least 8 characters.';
+    } else {
+        $existsStmt = $conn->prepare('SELECT id FROM users WHERE username = ? OR email = ? LIMIT 1');
+        $existsStmt->bind_param('ss', $username, $email);
+        $existsStmt->execute();
+        if ($existsStmt->get_result()->fetch_assoc()) {
+            $msg = 'Username or email already exists.';
+        } else {
+            $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+            $insertStmt = $conn->prepare('INSERT INTO users (username, password, email, role, created_by) VALUES (?, ?, ?, ?, ?)');
+            $insertStmt->bind_param('ssssi', $username, $passwordHash, $email, $role, $created_by);
+            $msg = $insertStmt->execute() ? ucfirst($role) . ' created successfully.' : 'Error: ' . $insertStmt->error;
+        }
     }
 }
 
-// List all users with creator name
-$result = $conn->query("SELECT u.id, u.username, u.email, u.role, u.created_at, a.username AS creator FROM users u LEFT JOIN users a ON u.created_by = a.id");
+if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
+    $id = (int)$_GET['delete'];
+    if ($id != $_SESSION['user_id']) {
+        $deleteStmt = $conn->prepare('DELETE FROM users WHERE id = ?');
+        $deleteStmt->bind_param('i', $id);
+        $deleteStmt->execute();
+    }
+}
+
+$result = $conn->query('SELECT u.id, u.username, u.email, u.role, u.created_at, a.username AS creator FROM users u LEFT JOIN users a ON u.created_by = a.id');
 $users = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 <!DOCTYPE html>

@@ -74,15 +74,32 @@ if ($_SESSION['role'] !== 'admin') {
             margin-bottom: 24px;
         }
 
-        .main-content {
-            margin-left: 230px;
-            padding: 10px 32px 32px 32px;
-            background: rgba(184, 221, 253, 0.95);
-            border-radius: 18px;
-            box-shadow: 0 4px 32px #b6c6e0aa;
-            max-width: 1100px;
-            margin-top: 36px;
-            margin-bottom: 36px;
+        @media (max-width: 900px) {
+            .admin-menu-table th,
+            .admin-menu-table td {
+                font-size: 0.85em;
+                padding: 6px 4px;
+            }
+
+            .crud-btn {
+                font-size: 0.8em;
+                padding: 3px 8px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .admin-menu-table th,
+            .admin-menu-table td {
+                font-size: 0.75em;
+                padding: 4px 2px;
+            }
+
+            .crud-btn {
+                display: block;
+                width: 100%;
+                margin-bottom: 4px;
+                font-size: 0.7em;
+            }
         }
     </style>
 </head>
@@ -95,7 +112,7 @@ if ($_SESSION['role'] !== 'admin') {
         <button id="show-menu-form-btn" class="add-btn" style="margin-bottom:16px;display:inline-block;">+ Add Menu Item
         </button>
         <form id="menu-form" enctype="multipart/form-data"
-            style="display:none;max-width:400px;margin:0 auto 24px auto;background:#f9f9f9;border-radius:8px;box-shadow:0 2px 8px #eee;padding:16px;display:flex;flex-direction:column;gap:10px;">
+            style="display:none;max-width:400px;margin:0 auto 24px auto;background:#f9f9f9;border-radius:8px;box-shadow:0 2px 8px #eee;padding:16px;flex-direction:column;gap:10px;">
             <input type="text" name="name" placeholder="Name" required>
             <input type="file" name="picture" accept="image/*">
             <input type="text" name="category" placeholder="Category" required>
@@ -106,21 +123,23 @@ if ($_SESSION['role'] !== 'admin') {
             <button type="button" id="hide-menu-form-btn"
                 style="margin-top:8px;background:#ccc;color:#222;border:none;border-radius:4px;padding:6px 0;">Cancel</button>
         </form>
-        <table class="admin-menu-table" id="admin-menu-table">
-            <thead>
-                <tr>
-                    <th>Picture</th>
-                    <th>Name</th>
-                    <th>Category</th>
-                    <th>Description</th>
-                    <th>Qty</th>
-                    <th>Price</th>
-                    <th>Created By</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <div style="overflow-x:auto;">
+            <table class="admin-menu-table" id="admin-menu-table">
+                <thead>
+                    <tr>
+                        <th>Picture</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                        <th>Created By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
     <script src="dashboard.js"></script>
     <script>
@@ -155,8 +174,8 @@ if ($_SESSION['role'] !== 'admin') {
             const showMenuFormBtn = document.getElementById('show-menu-form-btn');
             const hideMenuFormBtn = document.getElementById('hide-menu-form-btn');
             if (showMenuFormBtn && menuForm) {
-                showMenuFormBtn.style.display = 'inline-block'; // Ensure button is visible on load
-                menuForm.style.display = 'none'; // Ensure form is hidden on load
+                showMenuFormBtn.style.display = 'inline-block';
+                menuForm.style.display = 'none';
                 showMenuFormBtn.onclick = function() {
                     menuForm.style.display = 'block';
                     showMenuFormBtn.style.display = 'none';
@@ -219,7 +238,7 @@ if ($_SESSION['role'] !== 'admin') {
                             }
                         });
                         if (Object.keys(updateData).length === 0) {
-                            fetchAdminMenu(); // No changes
+                            fetchAdminMenu();
                             return;
                         }
                         fetch(`../backend/menu.php?action=update&id=${id}`, {

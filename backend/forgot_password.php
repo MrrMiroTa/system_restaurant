@@ -1,24 +1,45 @@
 <?php
-// backend/forgot_password.php
 require 'db.php';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
-    $email = $conn->real_escape_string($_POST['email']);
-    $res = $conn->query("SELECT * FROM users WHERE email='$email'");
-    if ($res && $user = $res->fetch_assoc()) {
-        // Generate reset token
-        $token = bin2hex(random_bytes(32));
-        $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
-        $conn->query("UPDATE users SET remember_token='$token' WHERE id=" . $user['id']);
-        // In production, send email. For demo, show link.
-        $reset_link = "http://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']) . "/reset_password.php?token=$token";
-        echo "<div style='padding:20px;background:#fff;border-radius:8px;max-width:400px;margin:40px auto;text-align:center;'>";
-        echo "Password reset link (valid 1 hour):<br><a href='$reset_link'>$reset_link</a>";
-        echo "<br><br><a href='../frontend/index.php'>Back to Login</a></div>";
-        exit();
-    } else {
-        echo "<div style='padding:20px;background:#fff;border-radius:8px;max-width:400px;margin:40px auto;text-align:center;color:red;'>Email not found.<br><a href='../frontend/forgot_password.php'>Try again</a></div>";
-        exit();
-    }
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    safe_redirect('../frontend/forgot_password.php');
 }
-header('Location: ../frontend/forgot_password.php');
-exit();
+
+$email = sanitize_text($_POST['email'] ?? '');
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    safe_redirect('../frontend/forgot_password.php?error=invalid_email');
+}
+
+$stmt = $conn->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+$stmt->bind_param('s', $email);
+$stmt->execute();
+$user = $stmt->get_result()->fetch_assoc();
+
+if (!$user) {
+    safe_redirect('../frontend/forgot_password.php?error=not_found');
+}
+
+$token = bin2hex(random_bytes(32));
+$updateStmt = $conn->prepare('UPDATE users SET remember_token = ? WHERE id = ?');
+$updateStmt->bind_param('si', $token, $user['id']);
+$updateStmt->execute();
+
+$scriptRoot = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+$reset_link = 'http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . $scriptRoot . '/../frontend/reset_password.php?token=' . urlencode($token);
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reset Link</title>
+    <link rel="stylesheet" href="../frontend/style.css">
+</head>
+<body>
+    <div class="container" style="max-width:500px; margin:60px auto; padding:24px; border-radius:12px; background:#fff; box-shadow:0 10px 25px rgba(0,0,0,0.08);">
+        <h2>Password reset link</h2>
+        <p>Use the link below to reset your password.</p>
+        <p><a href="<?= htmlspecialchars($reset_link) ?>"><?= htmlspecialchars($reset_link) ?></a></p>
+        <p><a href="../frontend/index.php">Back to login</a></p>
+    </div>
+</body>
+</html>
